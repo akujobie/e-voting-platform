@@ -1,0 +1,11 @@
+{
+  "builds": [
+    {
+      "src": "e-voting-portal/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "e-voting-portal/dist"
+      }
+    }
+  ]
+}
