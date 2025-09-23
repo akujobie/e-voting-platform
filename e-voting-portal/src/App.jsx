@@ -75,29 +75,49 @@ export default function EVotingPortal({ parties = DEFAULT_PARTIES }) {
 
   // Define valid credentials and used credentials arrays
   const validCredentials = [
-    { username: 'NIN1', passcode: 'DOB1' },
-    { username: 'NIN2', passcode: 'DOB2' },
-    { username: 'NIN3', passcode: 'DOB3' },
-    { username: 'NIN4', passcode: 'DOB4' },
-    { username: 'NIN5', passcode: 'DOB5' },
-    { username: 'NIN6', passcode: 'DOB6' },
-    { username: 'NIN7', passcode: 'DOB7' },
-    { username: 'NIN8', passcode: 'DOB8' },
-    { username: 'NIN9', passcode: 'DOB9' },
-    { username: 'NIN10', passcode: 'DOB10' },
+    { username: '1234567890', passcode: '1990-01-01' },
+    { username: '2345678901', passcode: '1991-02-02' },
+    { username: '3456789012', passcode: '1992-03-03' },
+    { username: '4567890123', passcode: '1993-04-04' },
+    { username: '5678901234', passcode: '1994-05-05' },
+    { username: '6789012345', passcode: '1995-06-06' },
+    { username: '7890123456', passcode: '1996-07-07' },
+    { username: '8901234567', passcode: '1997-08-08' },
+    { username: '9012345678', passcode: '1998-09-09' },
+    { username: '0123456789', passcode: '1999-10-10' },
   ];
 
   // Function to get user credentials
-  function getCredentials() {
-    const username = enteredNIN.trim();
-    const passcode = enteredDOB.trim();
+    function getCredentials() {
+      const username = enteredNIN.trim();
+      if (!username || !enteredDOB.trim()) {
+        alert('Please enter both a National Identification Number and Date of birth!');
+        return;
+      }
+      // Parse enteredDOB to Date and validate
+      const dobDate = new Date(enteredDOB.trim());
+      if (isNaN(dobDate.getTime())) {
+        alert('Please enter a valid Date of birth!');
+        return;
+      }
 
-    if (!username || !passcode) {
-      alert('Please enter both a National Identification Number and Date of birth!');
-      return;
-    }
+      // Calculate age
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const monthDiff = today.getMonth() - dobDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+        age--;
+      }
+
+      if (age < 18) {
+        alert('Sorry! You must be at least 18 years old to vote.');
+        return;
+      }
+
+      const passcode = dobDate.toISOString().slice(0, 10);
 
     const credential = validCredentials.find(cred => cred.username === username && cred.passcode === passcode);
+    console.log("Credential found:", credential);
 
     if (credential) {
       const credKey = `${username}:${passcode}`;
@@ -204,19 +224,44 @@ export default function EVotingPortal({ parties = DEFAULT_PARTIES }) {
         </div>
       )}
 
-      <div className="row mb-4">
+      <form className="row mb-4" onSubmit={e => { e.preventDefault(); getCredentials(); }}>
         <div className="col-md-4">
-          <label className="form-label">National Identification Number</label>
-          <input className="form-control" value={enteredNIN} onChange={e=>setEnteredNIN(e.target.value)} />
+          <label htmlFor="ninInput" className="form-label">National Identification Number</label>
+          <input
+            id="ninInput"
+            type="tel"
+            maxLength={10}
+            className="form-control"
+            value={enteredNIN}
+            onChange={e => {
+              let value = e.target.value;
+              console.log("NIN input changed:", value);
+              // Remove non-digit characters
+              value = value.replace(/\D/g, '');
+              // Limit length to 10
+              if (value.length <= 10) {
+                setEnteredNIN(value);
+              }
+            }}
+          />
         </div>
         <div className="col-md-4">
-          <label className="form-label">Date of birth</label>
-          <input type="password" className="form-control" value={enteredDOB} onChange={e=>setEnteredDOB(e.target.value)} />
+          <label htmlFor="dobInput" className="form-label">Date of birth</label>
+          <input
+            id="dobInput"
+            type="date"
+            className="form-control"
+            value={enteredDOB}
+            onChange={e => {
+              console.log("DOB input changed:", e.target.value);
+              setEnteredDOB(e.target.value);
+            }}
+          />
         </div>
         <div className="col-md-4 d-flex align-items-end">
-          <button onClick={getCredentials} className="btn btn-success w-100"><Unlock size={16}/> {unlocked ? "Unlocked" : "Enter Credentials to Vote"}</button>
+          <button type="submit" className="btn btn-success w-100"><Unlock size={16}/> {unlocked ? "Unlocked" : "Enter Credentials to Vote"}</button>
         </div>
-      </div>
+      </form>
 
       {unlocked && <h5 className="mb-3 marquee">Click on your preferred party logo to vote</h5>}
       <div className="d-flex gap-3 flex-wrap mb-4">
@@ -227,8 +272,7 @@ export default function EVotingPortal({ parties = DEFAULT_PARTIES }) {
           </button>
         ))}
         <button onClick={castVoid} className="btn btn-secondary p-4" disabled={store.ended || !unlocked}><Trash2/> Void Vote</button>
-      </div>
-
+    </div>
       {(showResults || store.ended || totalVotes > 0) && (
         <div className="card p-3">
           <h4 className="mb-3"><BarChart3/> Voting Results</h4>
